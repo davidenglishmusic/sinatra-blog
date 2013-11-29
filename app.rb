@@ -29,6 +29,20 @@ helpers do
   alias_method :h, :escape_html
 end
 
+# for Authentication
+helpers do
+  def protected!
+    return if authorized?
+    headers['WWW-Authenticate'] = 'Basic realm="Restricted Area"'
+    halt 401, "Invalid Credentials\n"
+  end
+
+  def authorized?
+    @auth ||=  Rack::Auth::Basic::Request.new(request.env)
+    @auth.provided? and @auth.basic? and @auth.credentials and @auth.credentials == ['admin', 'admin']
+  end
+end
+
 # get ALL posts
 get "/" do
   @posts = Post.order("created_at DESC")
@@ -38,6 +52,7 @@ end
 
 # create new post
 get "/posts/create" do
+  protected!
   @title = "Create post"
   @post = Post.new
   erb :"posts/create"
@@ -45,9 +60,9 @@ end
 post "/posts" do
   @post = Post.new(params[:post])
   if @post.save
-    redirect "posts/#{@post.id}", :notice => 'Congrats! Love the new post. (This message will disapear in 4 seconds.)'
+    redirect "posts/#{@post.id}", :notice => 'Post successful. (This message will disapear in 4 seconds.)'
   else
-    redirect "posts/create", :error => 'Something went wrong. Try again. (This message will disapear in 4 seconds.)'
+    redirect "posts/create", :error => 'Post unsuccessful. Try again. (This message will disapear in 4 seconds.)'
   end
 end
 
@@ -60,6 +75,7 @@ end
 
 # edit post
 get "/posts/:id/edit" do
+  protected!
   @post = Post.find(params[:id])
   @title = "Edit Form"
   erb :"posts/edit"
@@ -68,4 +84,12 @@ put "/posts/:id" do
   @post = Post.find(params[:id])
   @post.update(params[:post])
   redirect "/posts/#{@post.id}"
+end
+
+# delete post
+
+post "/posts/:id/delete" do
+  protected!
+  @post = Post.find(params[:id]).destroy
+  redirect "/"
 end
