@@ -16,8 +16,8 @@ a {
 }
 
 .deleteButton {
-  text-align: right;
   top: -34px;
   position: relative;
+  float: right;
 }
 
